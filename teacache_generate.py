@@ -280,7 +280,7 @@ def i2v_generate(self,
         seed_g = torch.Generator(device=self.device)
         seed_g.manual_seed(seed)
         noise = torch.randn(
-            self.vae.model.z_dim, 
+            self.vae.model.z_dim,
             (F - 1) // self.vae_stride[0] + 1,
             lat_h,
             lat_w,
@@ -515,7 +515,7 @@ def teacache_forward(
         freqs=self.freqs,
         context=context,
         context_lens=context_lens)
-        
+
     if self.enable_teacache:
         modulated_inp = e0 if self.use_ref_steps else e
         # teacache
@@ -539,7 +539,7 @@ def teacache_forward(
             if self.cnt < self.ret_steps or self.cnt >= self.cutoff_steps:
                     should_calc_odd = True
                     self.accumulated_rel_l1_distance_odd = 0
-            else: 
+            else:
                 rescale_func = np.poly1d(self.coefficients)
                 self.accumulated_rel_l1_distance_odd += rescale_func(((modulated_inp-self.previous_e0_odd).abs().mean() / self.previous_e0_odd.abs().mean()).cpu().item())
                 if self.accumulated_rel_l1_distance_odd < self.teacache_thresh:
@@ -549,7 +549,7 @@ def teacache_forward(
                     self.accumulated_rel_l1_distance_odd = 0
             self.previous_e0_odd = modulated_inp.clone()
 
-    if self.enable_teacache: 
+    if self.enable_teacache:
         if self.is_even:
             if not should_calc_even:
                 x += self.previous_residual_even
@@ -566,7 +566,7 @@ def teacache_forward(
                 for block in self.blocks:
                     x = block(x, **kwargs)
                 self.previous_residual_odd = x - ori_x
-    
+
     else:
         for block in self.blocks:
             x = block(x, **kwargs)
@@ -672,6 +672,11 @@ def _parse_args():
         default=False,
         help="Whether to use FSDP for DiT.")
     parser.add_argument(
+        "--save_dir",
+        type=str,
+        default=".",
+        help="The directory to save the generated image or video to.")
+    parser.add_argument(
         "--save_file",
         type=str,
         default=None,
@@ -741,7 +746,7 @@ def _parse_args():
         action="store_true",
         default=False,
         help="Using Retention Steps will result in faster generation speed and better generation quality.")
-        
+
 
     args = parser.parse_args()
 
@@ -997,7 +1002,7 @@ def generate(args):
                                                                      "_")[:50]
             suffix = '.png' if "t2i" in args.task else '.mp4'
             args.save_file = f"{args.task}_{args.size}_{args.ulysses_size}_{args.ring_size}_{formatted_prompt}_{formatted_time}" + suffix
-
+        args.save_file = os.path.join(args.save_dir, args.save_file)
         if "t2i" in args.task:
             logging.info(f"Saving generated image to {args.save_file}")
             cache_image(
@@ -1015,9 +1020,9 @@ def generate(args):
                 nrow=1,
                 normalize=True,
                 value_range=(-1, 1))
-    logging.info("Finished.")    
-    
-    
+    logging.info("Finished.")
+
+
 
 if __name__ == "__main__":
     args = _parse_args()
